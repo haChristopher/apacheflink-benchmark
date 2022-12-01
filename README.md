@@ -44,6 +44,28 @@ cd intoFlinkFolder
 ./bin/kubernetes-session.sh -Dkubernetes.cluster-id=my-first-flink-cluster
 ```
 
+### Setting up Kafka
+
+Install Kafka: https://kafka.apache.org/quickstart
+
+In two different terminals run:
+
+```
+# Starts Zookeeper instance
+bin/zookeeper-server-start.sh config/zookeeper.properties
+```
+
+```
+# Starts Kafka Broker
+$ bin/kafka-server-start.sh config/server.properties
+```
+
+Creating topics
+```
+bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092
+bin/kafka-topics.sh --create --topic flink-output --bootstrap-server localhost:9092
+```
+
 
 
 ## Execute benchmark from docker container

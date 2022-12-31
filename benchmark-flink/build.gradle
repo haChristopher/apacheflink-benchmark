@@ -6,7 +6,7 @@ plugins {
 }
 
 ext {
-    javaVersion = '1.8'
+    javaVersion = '1.11'
     flinkVersion = '1.16.0'
     scalaBinaryVersion = '2.12'
     slf4jVersion = '1.7.32'
@@ -71,12 +71,14 @@ dependencies {
         implementation "org.apache.flink:flink-clients_${scalaBinaryVersion}:${flinkVersion}"
     }
 
+    implementation "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+
     // --------------------------------------------------------------
     // Dependencies that should be part of the shadow jar, e.g.
     // connectors. These must be in the flinkShadowJar configuration!
     // --------------------------------------------------------------
     flinkShadowJar "org.apache.flink:flink-connector-kafka:${flinkVersion}"
-    flinkShadowJar "org.apache.flink:flink-walkthrough-datastream-java:${flinkVersion}"
+    // flinkShadowJar "org.apache.flink:flink-walkthrough-datastream-java:${flinkVersion}"
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-api:${log4jVersion}"

@@ -11,15 +11,10 @@ import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 
-// import org.apache.flink.walkthrough.common.sink.AlertSink;
-// import org.apache.flink.walkthrough.common.entity.Alert;
-// import org.apache.flink.walkthrough.common.entity.Transaction;
-// import org.apache.flink.walkthrough.common.source.TransactionSource;
-
 /**
  * Example data streaming job using window operators
  */
-public class DataStreamJob {
+public class KafkaDataSreamWindowJob {
 
 	public static void main(String[] args) throws Exception {
 		

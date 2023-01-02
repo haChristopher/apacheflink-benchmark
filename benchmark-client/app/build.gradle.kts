@@ -26,8 +26,13 @@ dependencies {
     // Use the JUnit 5 integration.
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.1")
 
-    // This dependency is used by the application.
+    //Application dependencies
     implementation("com.google.guava:guava:31.1-jre")
+    implementation("org.apache.kafka:kafka-clients:2.6.0")
+
+    // Data Serialization https://github.com/FasterXML/jackson-databind
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.9.6")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.6")
 }
 
 application {

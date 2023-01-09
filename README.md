@@ -1,7 +1,6 @@
 # apacheflink-benchmark
 Benchmarking client for apache flink
 
-
 ## Installation & Setup
 
 Install google cloud SDK (requires python):
@@ -18,7 +17,30 @@ Install Gradle
 brew install gradle
 ```
 
+Install JQuery (not necessary so far)
+```
+brew install jq
+```
+
+## Setting up Google Cloud
+
+- create project and copy ID to config (not project number!)
+- create service account [here](https://console.cloud.google.com/iam-admin/serviceaccounts) with admin/inhaber priviliges (copy service account keyfile path to config)
+- Activate Kubelesst API: https://console.cloud.google.com/apis/library/container.googleapis.com
+- Activate Compute Engine API: https://console.developers.google.com/apis/api/compute.googleapis.com
+- Activate Cloud Resource Manager API: https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com
+
+Config section should look like this:
+```
+####### Google Cloud Platform GKE #######
+project_name="csb-benchmark-apachef"
+service_account_key_file="/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-71816b8a0e21.json"
+cluster_name=csb-benchmark-flink-cluster
+```
+
+
 ## Running the benchmark
+
 ```
 terraform init
 ```
@@ -71,7 +93,7 @@ bin/zookeeper-server-start.sh config/zookeeper.properties
 
 ```
 # Starts Kafka Broker from Kafka Folder
-$ bin/kafka-server-start.sh config/server.properties
+bin/kafka-server-start.sh config/server.properties
 ```
 
 Creating topics

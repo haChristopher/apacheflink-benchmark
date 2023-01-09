@@ -1,10 +1,9 @@
-
 #!/bin/bash
 
 ####### Google Cloud Platform GKE #######
-project_name="csb-kubeless-benchmark" 
-service_account_key_file="/Users/Christopher/Uni/CSB/csb-kubeless-benchmark-d4a5ced18bab.json"
-cluster_name=csb-kubeless-benchmark-cluster
+project_name="csb-benchmark-apachef"
+service_account_key_file="/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-71816b8a0e21.json"
+cluster_name=csb-benchmark-flink-cluster
 
 ####### GKE Cluster #######
 gke_region="europe-west3-a"

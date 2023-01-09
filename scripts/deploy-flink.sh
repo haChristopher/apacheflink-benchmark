@@ -9,4 +9,5 @@ kubectl create -f jobmanager-session-deployment-non-ha.yaml
 kubectl create -f taskmanager-session-deployment.yaml
 
 # Port Forwarding
-kubectl port-forward service/flink-jobmanager 8081:8081
+# kubectl port-forward service/flink-jobmanager 8081:8081
+

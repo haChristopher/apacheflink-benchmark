@@ -7,8 +7,8 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 class AppTest {
-    @Test fun appHasNothing() {
+    @Test fun appHasAGreeting() {
         val classUnderTest = App()
-        assertNotNull(classUnderTest, "app should have a maximumPoolSize")
+        assertNotNull(classUnderTest.maximumPoolSize, "app should have a maximumPoolSize")
     }
 }

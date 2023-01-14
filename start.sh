@@ -5,8 +5,11 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source "config.sh"
 
 
-####### Kafka Deployment #######
+## Create Cluster
+./scripts/setup-cluster.sh
 
+####### Kafka Deployment #######
+./scripts/deploy-kafka.sh
 
 
 ####### Apache Flink Deployment #######

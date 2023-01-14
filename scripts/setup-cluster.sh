@@ -18,10 +18,11 @@ echo "Using k8s_version: $k8s_version"
 gcloud container clusters create "$project_name-cluster" \
     --cluster-version=${k8s_version} \
     --zone=${gke_region} \
-    --num-nodes=2 \
+    --num-nodes=${gke_num_nodes} \
     --machine-type=${gke_machine_type}\
     --no-enable-cloud-logging \
-    --enable-network-policy \
+    # --enable-network-policy \
+    --no-enable-ip-alias \
     --scopes=gke-default,compute-rw,storage-rw
 
 

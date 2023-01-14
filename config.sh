@@ -6,8 +6,8 @@ service_account_key_file="/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-
 cluster_name=csb-benchmark-flink-cluster
 
 ####### GKE Cluster #######
-gke_region="europe-west3-a"
-gke_num_nodes=1
+gke_region="europe-west3-c"
+gke_num_nodes=3
 gke_machine_type="n1-standard-1"
 
 ####### SUT Deployment ######

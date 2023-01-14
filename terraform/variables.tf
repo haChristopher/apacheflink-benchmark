@@ -10,6 +10,18 @@ variable "instance_type" {
   default     = "e2-micro"
 }
 
+variable "gke_machine_type" {
+  type        = string
+  description = "Type of machine for GKE Cluster nodes"
+  default     = "e2-micro"
+}
+
+variable "subnet_name" {
+  type        = string
+  description = "Name of the subnet for GKE and GCE"
+  default     = "benchmark-subnet"
+}
+
 variable "instance_disk_size" {
   type        = number
   description = "Size of instance disk in GB"
@@ -19,7 +31,13 @@ variable "instance_disk_size" {
 variable "instance_region" {
   type        = string
   description = "Region of benchmarking client instances"
-  default     = "europe-west3-a"
+  default     = "europe-west3-c"
+}
+
+variable "region" {
+  type        = string
+  description = "Region of benchmarking client instances"
+  default     = "europe-west3"
 }
 
 variable "benchmark_client_jar" {

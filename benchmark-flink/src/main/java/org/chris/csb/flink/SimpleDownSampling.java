@@ -1,34 +1,36 @@
 package org.chris.csb.flink;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.util.Collector;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserializationSchema;
+import org.chris.csb.flink.serializers.RecordSerializationSchema;
+
 import org.apache.flink.connector.base.DeliveryGuarantee;
-import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ArrayNode;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Example data streaming job using window operators
+ * Simple Downsampling Windowing Job
  */
 public class SimpleDownSampling {
-
-	@JsonSerialize
-	public class InputMessage {
-		String sender;
-		String recipient;
-		LocalDateTime sentAt;
-		String message;
-	}
 
 	public static void main(String[] args) throws Exception {
 		
@@ -36,50 +38,94 @@ public class SimpleDownSampling {
 		String inputTopic = "flink-input";
 		String outputTopic = "flink-output";
 		String consumerGroup = "benchmark";
-		String broker = "192.168.2.133:9092";
+		String broker = "host.docker.internal:9092";
 		int allowedLatenessInSeconds = 5;
+		int consideredLateAfterSeconds = 6;
+		int windowSizeInSeconds = 5;
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		KafkaSource<String> source = KafkaSource.<String>builder()
+		/* SOURCE */
+		KafkaSource<ObjectNode> source = KafkaSource.<ObjectNode>builder()
 			.setBootstrapServers(broker)
 			.setTopics(inputTopic)
 			.setGroupId(consumerGroup)
+			.setDeserializer(KafkaRecordDeserializationSchema.of(
+				new JSONKeyValueDeserializationSchema(false)
+			))
 			.setStartingOffsets(OffsetsInitializer.latest())
-			.setValueOnlyDeserializer(new SimpleStringSchema())
 			.build();
 
-		KafkaSink<String> sink = KafkaSink.<String>builder()
+		/* SINK */
+		KafkaSink<ObjectNode> sink = KafkaSink.<ObjectNode>builder()
 			.setBootstrapServers(broker)
-			.setRecordSerializer(KafkaRecordSerializationSchema.builder()
-				.setTopic(outputTopic)
-				.setValueSerializationSchema(new SimpleStringSchema())
-				.build()
-			)
+			.setRecordSerializer(new RecordSerializationSchema(outputTopic))
 			.setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
 			.build();
 
 
-		WatermarkStrategy<Tuple2<Long, String>>  basicStrategy = WatermarkStrategy
-			.<Tuple2<Long, String>>forBoundedOutOfOrderness(Duration.ofSeconds(6))
-			.withTimestampAssigner((event, timestamp) -> event.f0);
+		/** Extracts timestamp from stream element and uses it as watermark. */
+		WatermarkStrategy<ObjectNode>  basicStrategy = WatermarkStrategy
+			.<ObjectNode>forBoundedOutOfOrderness(Duration.ofSeconds(consideredLateAfterSeconds))
+			.withTimestampAssigner(
+				new SerializableTimestampAssigner<ObjectNode>() {
+					@Override
+					public long extractTimestamp(ObjectNode element, long recordTimestamp) {
+						Long timeStamp = 0L;
+						try {
+							String value = element.get("value").get("content").get("timestamp").asText();
+							timeStamp = Instant.parse(value).getEpochSecond();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+						return timeStamp;
+					}
+				}
+			);
 
 		
-		DataStream<String> stream = env.fromSource(source, basicStrategy, "Kafka Source");	
+		DataStream<ObjectNode> stream = env.fromSource(source, basicStrategy, "Kafka Source");	
 		
 
-		DataStream<String> downsampled = stream
-			.windowAll(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+		/** TRANSFORMATION */
+		DataStream<ObjectNode> downsampled = stream
+			.windowAll(TumblingProcessingTimeWindows.of(Time.seconds(windowSizeInSeconds)))
 			.allowedLateness( Time.seconds( allowedLatenessInSeconds ) )
-			.sum(2);
-			// .process( new ProcessAllWindowFunction<Element, Integer ,TimeWindow>()
-			// {
-			// 	@Override
-			// 	public void process( Context arg0, Iterable<Element> input, Collector<Integer> output ) throws Exception
-			// 	{
-			// 		output.collect( 1 );
-			// 	}
-			// });
+			.process( new ProcessAllWindowFunction<ObjectNode, ObjectNode, TimeWindow>()
+			{
+				@Override
+				public void process( Context arg0, Iterable<ObjectNode> input, Collector<ObjectNode> output ) throws Exception
+				{
+
+					ObjectMapper mapper = new ObjectMapper();
+					ObjectNode result = mapper.createObjectNode();
+
+					result.put("window start", arg0.window().getStart());
+					result.put("window end", arg0.window().getEnd());
+
+					List<Integer> list = new ArrayList<Integer>();
+					Integer numRecords = 0;
+					Integer sum = 0;
+
+					try {
+						for (ObjectNode element : input) {
+							list.add(element.get("value").get("id").asInt());
+							sum += element.get("value").get("value").asInt();
+							numRecords ++;
+						}
+					} catch (NullPointerException e) {
+						// Do nothing here, fix later
+					}
+
+					result.put("value", sum);
+					result.put("numRecords", numRecords);
+					ArrayNode array = mapper.valueToTree(list);
+					result.putArray("composed").addAll(array);
+
+					output.collect( result );
+				}
+			});
 
 		downsampled.sinkTo(sink);
 		

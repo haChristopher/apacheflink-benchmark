@@ -27,7 +27,7 @@ public class DataStreamJob {
 		String inputTopic = "flink-input";
 		String outputTopic = "flink-output";
 		String consumerGroup = "benchmark";
-		String broker = "192.168.178.110:9092";
+		String broker = "host.docker.internal:9092";
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 

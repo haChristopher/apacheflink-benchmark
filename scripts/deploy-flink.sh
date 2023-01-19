@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd infrastructure
+cd infrastructure/flink
+
 ## Configuration and service definition
 kubectl create -f flink-configuration-configmap.yaml
 kubectl create -f jobmanager-service.yaml

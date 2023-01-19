@@ -38,19 +38,17 @@ service_account_key_file="/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-
 cluster_name=csb-benchmark-flink-cluster
 ```
 
-
 ## Running the benchmark
 
 ```
 terraform init
 ```
 
-## Running the benchmark (locally on kubernetes)
+## Running the benchmark (locally)
 
 Install docker desktop and start a kubernetes cluster: https://docs.docker.com/desktop/kubernetes/
 
 Install kubectl: https://kubernetes.io/docs/tasks/tools/
-
 
 Check if kubectls is pointing to docker desktop
 ```
@@ -66,14 +64,23 @@ Install Apache Flink Locally: https://nightlies.apache.org/flink/flink-docs-rele
 
 Deploy apache flink session mode on kubernetes:
 ```
-cd flink-1.16.0
-./bin/kubernetes-session.sh -Dkubernetes.cluster-id=my-first-flink-cluster
+./scripts/deploy-flink.sh
 ```
 
 Check if deployed
 ```
 kubectl get pods --all-namespaces
 ```
+
+Setup port forward to see job dashboard
+```
+kubectl port-forward service/flink-jobmanager 8081:8081
+```
+
+For parsing and deploying the job JAVA_HOME needs to point to Java 11 (or 8), as higher versions are currently not supported by flink:
+```
+export JAVA_HOME='/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home'
+``` 
 
 ### Setting up Kafka
 
@@ -101,6 +108,16 @@ Creating topics
 bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092
 bin/kafka-topics.sh --create --topic flink-output --bootstrap-server localhost:9092
 ```
+
+Monitor Output Topic if needed
+```
+./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flink-output
+```
+
+## Building different job pipelines
+
+- Double check gradle pointing to the correct job
+- Running locally in kubernets cluster access localhost services via 'host.docker.internal'
 
 ## Execute benchmark from docker container
 ...

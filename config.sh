@@ -14,3 +14,6 @@ gke_machine_type="n1-standard-1"
 flink_version="1.16.0"
 scala_version="2.12"
 dataset="custom" # custom / user-activity / ...
+
+###### Job deployment #######
+java_11_home="/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home"

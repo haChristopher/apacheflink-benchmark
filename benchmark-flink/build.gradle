@@ -18,9 +18,9 @@ ext {
 group = 'org.chris.csb.flink'
 version = '0.1-SNAPSHOT'
 if (flinkVersionNew) {
-    mainClassName = 'org.chris.csb.flink.DataStreamJob'
+    mainClassName = 'org.chris.csb.flink.SimpleDownSampling'
 } else {
-    mainClassName = 'org.chris.csb.flink.StreamingJob'
+    mainClassName = 'org.chris.csb.flink.SimpleDownSampling'
 }
 description = """Flink Quickstart Job"""
 

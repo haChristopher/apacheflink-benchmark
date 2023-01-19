@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.util.StdDateFormat
 
+import kotlin.random.Random
+
 class KafkaRunner: Runnable {
 
     var broker: String
@@ -37,6 +39,7 @@ class KafkaRunner: Runnable {
         
         for (i in 1..10) {
             println("${Thread.currentThread()} has run.")
+            Thread.sleep(1_000)
             
             val timestamp = DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")
@@ -44,7 +47,8 @@ class KafkaRunner: Runnable {
                 .format(Instant.now())
 
             var message = Message(
-                timestampSend = timestamp,
+                id = Random.nextInt(0, 10000),
+                timestamp = timestamp,
                 value = i,
                 threadId = currThreadId,
                 benchmarkClientID = this.clientId

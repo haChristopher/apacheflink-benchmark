@@ -14,15 +14,20 @@ source "config.sh"
 
 ####### Apache Flink Deployment #######
 
-# Job Deployment
-# ./bin/flink run -m localhost:8081 /Users/christopher/Uni/repos/apacheflink-benchmark/benchmark-flink/build/libs/benchmark-flink-0.1-SNAPSHOT.jar
+# Export Java Home for job graph parsing
+#export JAVA_HOME='/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home'
 
+# Job Deployment
+# ./bin/flink run -m localhost:8081 /Users/christopher/Uni/repos/apacheflink-benchmark/benchmark-flink/build/libs/benchmark-flink-0.1-SNAPSHOT-all.jar
 
 
 ###### Build pipelines and client jars #######
 # cd benchmark-client
 # gradle build
 # cd ..
+
+# Use env here or config var
+# gradle shadowJar -Dorg.gradle.java.home=/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home
 
 
 ####### Benchmark Clients Deployment #######

@@ -6,26 +6,39 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.SynchronousQueue
 import java.util.Properties
 import java.util.UUID
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+
 import java.io.File
 import java.io.FileInputStream
-import benchmark.client.KafkaRunner
+import benchmark.client.KafkaProducerRunner
+import benchmark.client.KafkaConsumerRunner
 
 class App {
     var corePoolSize: Int = 2
     var maximumPoolSize: Int = 3
     var keepAliveTime = 100L
     var workQueue = SynchronousQueue<Runnable>()
+    lateinit var workerPool: ExecutorService
+    lateinit var properties: Properties
+    lateinit var queue: BlockingQueue<ResultMessage>
+    lateinit var mode: String
 
-    fun run(){
+    fun run(mode: String ){
+        this.mode = mode
         this.setup();
     }
 
     fun setup() {
 
-        val properties: Properties = loadProperties()
+        properties = loadProperties()
         var clientId: String? = System.getenv("CLIENT_ID")
 
-        if ( clientId == null ) {
+        if (this.mode == ""){
+            this.mode = properties.getProperty("Mode")
+        }
+
+        if ( clientId == null) {
             clientId = UUID.randomUUID().toString()
         }
 
@@ -37,19 +50,45 @@ class App {
             workQueue,
         )
 
-        val kafkaRunner: KafkaRunner = KafkaRunner(
-            properties.getProperty("KafkaBroker"),
-            properties.getProperty("KafkaTopic"),
-            clientId
-        );
-        
-        // workerPool.execute(kafkaRunner);
-        workerPool.execute(kafkaRunner);
-        workerPool.execute(kafkaRunner);
+        queue = LinkedBlockingDeque<ResultMessage>();
 
-        Thread.sleep(5000)
+        if (mode == "consume") {
+            println("Consumer mode selected");
 
+            val kafkaConsumer: KafkaConsumerRunner = KafkaConsumerRunner(
+                properties.getProperty("KafkaBroker"),
+                properties.getProperty("KafkaOutTopic"),
+                properties.getProperty("ConsumerGroup"),
+                queue,
+                clientId.toString()
+            );
+
+            val csvWriter: CsvRunner = CsvRunner(
+                "/",
+                queue,
+                clientId.toString()
+            );
+            
+            workerPool.execute(kafkaConsumer);
+            workerPool.execute(kafkaConsumer);
+            workerPool.execute(csvWriter);
+        } else {
+            print("Producer mode selected");
+
+            val kafkaProducer: KafkaProducerRunner = KafkaProducerRunner(
+                properties.getProperty("KafkaBroker"),
+                properties.getProperty("KafkaInTopic"),
+                clientId.toString()
+            );
+
+            workerPool.execute(kafkaProducer);
+            workerPool.execute(kafkaProducer);
+            workerPool.execute(kafkaProducer);
+        }
+
+        Thread.sleep(10000)
         workerPool.shutdown()
+
     }
 
     fun loadProperties(): Properties {
@@ -69,6 +108,10 @@ class App {
     }
 }
 
-fun main() {
-    App().run()
+fun main(args: Array<String>) {
+    var mode = "";
+    if (args.size > 0){
+        mode = args[0]
+    }
+    App().run(mode=mode)
 }

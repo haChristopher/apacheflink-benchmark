@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.util.StdDateFormat
 
 import kotlin.random.Random
 
-class KafkaRunner: Runnable {
+class KafkaProducerRunner: Runnable {
 
     var broker: String
     var topic: String
@@ -37,7 +37,7 @@ class KafkaRunner: Runnable {
 
         val currThreadId: Long = Thread.currentThread()!!.getId()
         
-        for (i in 1..10) {
+        for (i in 1..20) {
             println("${Thread.currentThread()} has run.")
             Thread.sleep(1_000)
             

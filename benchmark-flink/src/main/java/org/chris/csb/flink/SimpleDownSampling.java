@@ -101,8 +101,8 @@ public class SimpleDownSampling {
 					ObjectMapper mapper = new ObjectMapper();
 					ObjectNode result = mapper.createObjectNode();
 
-					result.put("window start", arg0.window().getStart());
-					result.put("window end", arg0.window().getEnd());
+					result.put("windowStart", arg0.window().getStart());
+					result.put("windowEnd", arg0.window().getEnd());
 
 					List<Integer> list = new ArrayList<Integer>();
 					Integer numRecords = 0;
@@ -117,6 +117,8 @@ public class SimpleDownSampling {
 					} catch (NullPointerException e) {
 						// Do nothing here, fix later
 					}
+
+					// get timestamp of earliest value
 
 					result.put("value", sum);
 					result.put("numRecords", numRecords);

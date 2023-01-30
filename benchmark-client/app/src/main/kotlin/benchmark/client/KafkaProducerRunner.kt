@@ -41,14 +41,11 @@ class KafkaProducerRunner: Runnable {
             println("${Thread.currentThread()} has run.")
             Thread.sleep(1_000)
             
-            val timestamp = DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")
-                .withZone(ZoneOffset.UTC)
-                .format(Instant.now())
+            val timestamp = System.currentTimeMillis();
 
             var message = Message(
                 id = Random.nextInt(0, 10000),
-                timestamp = timestamp,
+                sendTimestamp = timestamp,
                 value = i,
                 threadId = currThreadId,
                 benchmarkClientID = this.clientId

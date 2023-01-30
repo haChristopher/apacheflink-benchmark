@@ -103,6 +103,11 @@ bin/zookeeper-server-start.sh config/zookeeper.properties
 bin/kafka-server-start.sh config/server.properties
 ```
 
+```
+# Change config file or run afterwards or use custom server.properties file
+./bin/kafka-configs.sh --alter --entity-type brokers --bootstrap-server localhost:9092 --entity-name 0 --add-config log.message.timestamp.type=LogAppendTime
+```
+
 Creating topics
 ```
 bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092

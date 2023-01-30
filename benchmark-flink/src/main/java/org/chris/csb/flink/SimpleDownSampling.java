@@ -7,8 +7,8 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.util.Collector;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
@@ -51,9 +51,10 @@ public class SimpleDownSampling {
 			.setTopics(inputTopic)
 			.setGroupId(consumerGroup)
 			.setDeserializer(KafkaRecordDeserializationSchema.of(
-				new JSONKeyValueDeserializationSchema(false)
+				new JSONKeyValueDeserializationSchema(true)
 			))
 			.setStartingOffsets(OffsetsInitializer.latest())
+			//.setStartingOffsets(OffsetsInitializer.earliest())
 			.build();
 
 		/* SINK */
@@ -70,16 +71,18 @@ public class SimpleDownSampling {
 			.withTimestampAssigner(
 				new SerializableTimestampAssigner<ObjectNode>() {
 					@Override
-					public long extractTimestamp(ObjectNode element, long recordTimestamp) {
+					public long extractTimestamp(ObjectNode element, long previousElementTimestamp) {
 						Long timeStamp = 0L;
 						try {
-							String value = element.get("value").get("content").get("timestamp").asText();
-							timeStamp = Instant.parse(value).getEpochSecond();
+							// String value = element.get("value").get("content").get("timestamp").asText();
+							// timeStamp = Instant.parse(value).getEpochSecond();
+							timeStamp = element.get("value").get("sendTimestamp").asLong();
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 
 						return timeStamp;
+						// return previousElementTimestamp;
 					}
 				}
 			);
@@ -107,19 +110,35 @@ public class SimpleDownSampling {
 					List<Integer> list = new ArrayList<Integer>();
 					Integer numRecords = 0;
 					Integer sum = 0;
+					Long earliestTimestamp = Long.MAX_VALUE;
+					Long latestTimestamp = Long.MIN_VALUE;
+					String debug = "";
 
 					try {
 						for (ObjectNode element : input) {
 							list.add(element.get("value").get("id").asInt());
 							sum += element.get("value").get("value").asInt();
+							long sendTimestamp = element.get("value").get("sendTimestamp").asLong();
 							numRecords ++;
+							
+							Iterator<String>  it = element.get("value").fieldNames();
+							while(it.hasNext()) {
+								debug +=  it.next();
+							}
+
+							if (sendTimestamp < earliestTimestamp) {
+								earliestTimestamp = sendTimestamp;
+							}
+							if (sendTimestamp > latestTimestamp) {
+								latestTimestamp = sendTimestamp;
+							}
 						}
 					} catch (NullPointerException e) {
 						// Do nothing here, fix later
 					}
 
-					// get timestamp of earliest value
-
+					result.put("debug", debug);
+					result.put("sendTimestamp", earliestTimestamp);
 					result.put("value", sum);
 					result.put("numRecords", numRecords);
 					ArrayNode array = mapper.valueToTree(list);

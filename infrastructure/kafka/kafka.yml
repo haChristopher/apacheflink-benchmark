@@ -33,6 +33,8 @@ spec:
           value: "5555"
         - name: KAFKA_CLEANUP_POLICY
           value: "compact"
+        - name: TOPIC_TIMESTAMP_TYPE
+          value: "LogAppendTime"
         volumeMounts:
           - name: readwrite-volume
             mountPath: "/kafka/kafka-logs"

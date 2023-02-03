@@ -1,5 +1,5 @@
 # apacheflink-benchmark
-Benchmarking client for apache flink
+Benchmarks the impact of allowed lateness on latency for Apache Flink.
 
 ## Installation & Setup
 
@@ -82,7 +82,7 @@ For parsing and deploying the job JAVA_HOME needs to point to Java 11 (or 8), as
 export JAVA_HOME='/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home'
 ``` 
 
-### Setting up Kafka
+### Setting up Kafka (and useful commands)
 
 Install Kafka: https://kafka.apache.org/quickstart
 
@@ -114,6 +114,12 @@ bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:90
 bin/kafka-topics.sh --create --topic flink-output --bootstrap-server localhost:9092
 ```
 
+Delete topics
+```
+bin/kafka-topics.sh --delete --topic flink-input --bootstrap-server localhost:9092
+bin/kafka-topics.sh --delete --topic flink-output --bootstrap-server localhost:9092
+```
+
 Monitor Output Topic if needed
 ```
 ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flink-output
@@ -126,3 +132,16 @@ Monitor Output Topic if needed
 
 ## Execute benchmark from docker container
 ...
+
+
+# Data Analysis
+
+Install python and dependendcies
+```
+pip install -r requirements.txt
+```
+
+Run the analysis:
+```
+python analyse.py myResults.csv
+```

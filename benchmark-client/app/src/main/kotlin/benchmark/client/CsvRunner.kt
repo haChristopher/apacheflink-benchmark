@@ -13,63 +13,66 @@ import java.util.concurrent.TimeUnit;
 
 class CsvRunner: Runnable {
     var clientId: String
-    var queue: BlockingQueue<ResultMessage>
+    var queue: BlockingQueue<CSVWriteable>
     var basePath: String
     var currentNumRecords = 0
     var seperator = ";"
     var currentFileName = ""
     var currentFileIndex = 0
     var currentThreadId: Long
+    var batchSize: Int
+    var batchTimeOut: Long
+    var recordsPerFile: Int
 
-    constructor(basePath: String, queue: BlockingQueue<ResultMessage>, clientId: String) {
+    @JvmOverloads constructor(
+        basePath: String,
+        queue: BlockingQueue<CSVWriteable>,
+        clientId: String,
+        batchSize: Int = 50,
+        batchTimeOut: Long = 10000,
+        recordsPerFile: Int = 10000
+    ) {
         this.basePath = basePath
         this.queue = queue
         this.clientId = clientId
         this.currentThreadId = Thread.currentThread()!!.getId()
+        this.batchSize = batchSize
+        this.batchTimeOut = batchTimeOut
+        this.recordsPerFile = recordsPerFile
     }
 
     public override fun run() {
 
         while (!Thread.currentThread().isInterrupted()) {
-            // create new file name
             val time = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
             currentFileName = time.toString() + "-" + currentThreadId + "-" + currentFileIndex + ".csv"
-            var list: MutableList<ResultMessage> = mutableListOf()
+            var list: MutableList<CSVWriteable> = mutableListOf()
 
-            var currentFile = File(currentFileName)
+            var currentFile = File(basePath + currentFileName)
+            currentFile.getParentFile().mkdirs();
+            currentFile.createNewFile();
 
-            currentFile.writeText(ResultMessage.Helper.toPropertyCSVString())
-            currentFile.appendText("\n")
+            var headerWritten = false
 
-            // currentFile.bufferedWriter().use { out ->
-            //     out.write("id;timestamp;value;windowEnd;windowStart;numRecords;composed")
-            //     out.newLine()
-            // }
-        
-            while (currentNumRecords < 1000) {
+            while (currentNumRecords < this.recordsPerFile) {
 
                 try {
-                    while(list.size < 5) {
-                        list.add(queue.take());
+                    val timeoutAt: Long = System.currentTimeMillis() + batchTimeOut;
+                    while(list.size < this.batchSize || timeoutAt > System.currentTimeMillis()) {
+                        list.add(queue.poll(3, TimeUnit.SECONDS));
                     }
-                    // println(list[0].toString())
                 } catch (e: Exception) {
                     Thread.currentThread().interrupt();
                 }
 
-                // currentFile.bufferedWriter().use{ out ->
-                //     list.toList().forEach {
-                //         //${it.id}, ${it.timestamp
-                //         out.append(";;${it.value};${it.windowEnd};${it.windowStart};${it.numRecords};")
-                //         out.append(it.composed.joinToString(prefix = "[", postfix = "]", separator = ","))
-                //         out.newLine()
-                //     }
-                // }
+                if (!headerWritten) {
+                    currentFile.writeText(list.get(0).toPropertyCSVString())
+                    currentFile.appendText("\n")
+                    headerWritten = true
+                }
 
                 list.toList().forEach {
-                    currentFile.appendText(it.toString())
-                    //currentFile.appendText(";;${it.value};${it.windowEnd};${it.windowStart};${it.numRecords};")
-                    //currentFile.appendText(it.composed.joinToString(prefix = "[", postfix = "]", separator = ","))
+                    currentFile.appendText(it.toCSVString())
                     currentFile.appendText("\n")
                 }
 

@@ -27,9 +27,9 @@ class KafkaConsumerRunner: Runnable {
     var topic: String
     var clientId: String
     var consumerGroup: String
-    var queue: BlockingQueue<ResultMessage>
+    var queue: BlockingQueue<CSVWriteable>
 
-    constructor(broker: String, topic: String,  group: String, queue: BlockingQueue<ResultMessage>, clientId: String) {
+    constructor(broker: String, topic: String,  group: String, queue: BlockingQueue<CSVWriteable>, clientId: String) {
         this.broker = broker
         this.topic = topic
         this.consumerGroup = group

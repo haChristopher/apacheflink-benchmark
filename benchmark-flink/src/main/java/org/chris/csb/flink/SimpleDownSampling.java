@@ -2,7 +2,7 @@ package org.chris.csb.flink;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.util.Collector;
 
@@ -39,8 +39,8 @@ public class SimpleDownSampling {
 		String outputTopic = "flink-output";
 		String consumerGroup = "benchmark";
 		String broker = "host.docker.internal:9092";
-		int allowedLatenessInSeconds = 5;
-		int consideredLateAfterSeconds = 6;
+		int allowedLatenessInSeconds = 50;
+		int consideredLateAfterSeconds = 0;
 		int windowSizeInSeconds = 5;
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -81,33 +81,34 @@ public class SimpleDownSampling {
 							e.printStackTrace();
 						}
 
+						// return timeStamp;
+						element.put("writeInTimestamp", previousElementTimestamp);
 						return timeStamp;
-						// return previousElementTimestamp;
 					}
 				}
 			);
 
-		
+		/** Event time processing is default setting since flink 1.12 */
+		// env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		DataStream<ObjectNode> stream = env.fromSource(source, basicStrategy, "Kafka Source");	
 		
-
 		/** TRANSFORMATION */
 		DataStream<ObjectNode> downsampled = stream
-			.windowAll(TumblingProcessingTimeWindows.of(Time.seconds(windowSizeInSeconds)))
+			.windowAll(TumblingEventTimeWindows.of(Time.seconds(windowSizeInSeconds)))
 			.allowedLateness( Time.seconds( allowedLatenessInSeconds ) )
 			.process( new ProcessAllWindowFunction<ObjectNode, ObjectNode, TimeWindow>()
 			{
 				@Override
-				public void process( Context arg0, Iterable<ObjectNode> input, Collector<ObjectNode> output ) throws Exception
+				public void process( Context ctx, Iterable<ObjectNode> input, Collector<ObjectNode> output ) throws Exception
 				{
 
 					ObjectMapper mapper = new ObjectMapper();
 					ObjectNode result = mapper.createObjectNode();
 
-					result.put("windowStart", arg0.window().getStart());
-					result.put("windowEnd", arg0.window().getEnd());
+					result.put("windowStart", ctx.window().getStart());
+					result.put("windowEnd", ctx.window().getEnd());
 
-					List<Integer> list = new ArrayList<Integer>();
+					List<String> list = new ArrayList<String>();
 					Integer numRecords = 0;
 					Integer sum = 0;
 					Long earliestTimestamp = Long.MAX_VALUE;
@@ -116,15 +117,15 @@ public class SimpleDownSampling {
 
 					try {
 						for (ObjectNode element : input) {
-							list.add(element.get("value").get("id").asInt());
+							list.add(element.get("value").get("id").asText());
 							sum += element.get("value").get("value").asInt();
 							long sendTimestamp = element.get("value").get("sendTimestamp").asLong();
 							numRecords ++;
 							
-							Iterator<String>  it = element.get("value").fieldNames();
-							while(it.hasNext()) {
-								debug +=  it.next();
-							}
+							// Iterator<String>  it = element.get("value").fieldNames();
+							// while(it.hasNext()) {
+							// 	debug +=  it.next();
+							// }
 
 							if (sendTimestamp < earliestTimestamp) {
 								earliestTimestamp = sendTimestamp;

@@ -20,11 +20,13 @@ class KafkaProducerRunner: Runnable {
     var broker: String
     var topic: String
     var clientId: String
+    var messagesPerSecond: Int = 0;
 
-    constructor(broker: String, topic: String, clientId: String) {
+    constructor(broker: String, topic: String, clientId: String, messagesPerSecond: Int) {
         this.broker = broker
         this.topic = topic
         this.clientId = clientId
+        this.messagesPerSecond = messagesPerSecond
     }
 
     public override fun run() {
@@ -44,7 +46,7 @@ class KafkaProducerRunner: Runnable {
             val timestamp = System.currentTimeMillis();
 
             var message = Message(
-                id = Random.nextInt(0, 10000),
+                id = currThreadId.toString() + "-" + this.clientId + "-" + Random.nextInt(0, 10000),
                 sendTimestamp = timestamp,
                 value = i,
                 threadId = currThreadId,
@@ -64,5 +66,9 @@ class KafkaProducerRunner: Runnable {
         props["key.serializer"] = StringSerializer::class.java.canonicalName
         props["value.serializer"] = StringSerializer::class.java.canonicalName
         return KafkaProducer<String, String>(props)
+    }
+
+    private fun generateData(){
+
     }
 }

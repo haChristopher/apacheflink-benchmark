@@ -6,12 +6,13 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.SynchronousQueue
 import java.util.Properties
 import java.util.UUID
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingDeque
 
 import java.io.File
 import java.io.FileInputStream
 import benchmark.client.KafkaProducerRunner
+import benchmark.client.KafkaDelayProducerRunner
 import benchmark.client.KafkaConsumerRunner
 
 class App {
@@ -19,10 +20,14 @@ class App {
     var maximumPoolSize: Int = 3
     var keepAliveTime = 100L
     var workQueue = SynchronousQueue<Runnable>()
+    var csvPath = "/"
     lateinit var workerPool: ExecutorService
     lateinit var properties: Properties
-    lateinit var queue: BlockingQueue<ResultMessage>
+    lateinit var queue: BlockingQueue<CSVWriteable>
     lateinit var mode: String
+    var msgsPerSecond: Int = 0
+    var percentLate: Int = 0
+    var latenessInSecond: Int = 0
 
     fun run(mode: String ){
         this.mode = mode
@@ -30,11 +35,15 @@ class App {
     }
 
     fun setup() {
-
-        properties = loadProperties()
         var clientId: String? = System.getenv("CLIENT_ID")
+        
+        // Get Configuration
+        this.properties = loadProperties()
+        this.msgsPerSecond = Integer.parseInt(properties.getProperty("MessagesPerSecond"), 10);
+        this.percentLate = Integer.parseInt(properties.getProperty("PercentageOfLateMsgs"), 10);
+        this.latenessInSecond = Integer.parseInt(properties.getProperty("LatenessInSecond"), 10);
 
-        if (this.mode == ""){
+        if (this.mode == "") {
             this.mode = properties.getProperty("Mode")
         }
 
@@ -50,10 +59,11 @@ class App {
             workQueue,
         )
 
-        queue = LinkedBlockingDeque<ResultMessage>();
+        queue = LinkedBlockingDeque<CSVWriteable>();
 
         if (mode == "consume") {
             println("Consumer mode selected");
+            csvPath = "results/"
 
             val kafkaConsumer: KafkaConsumerRunner = KafkaConsumerRunner(
                 properties.getProperty("KafkaBroker"),
@@ -62,31 +72,38 @@ class App {
                 queue,
                 clientId.toString()
             );
-
-            val csvWriter: CsvRunner = CsvRunner(
-                "/",
-                queue,
-                clientId.toString()
-            );
             
             workerPool.execute(kafkaConsumer);
             workerPool.execute(kafkaConsumer);
-            workerPool.execute(csvWriter);
         } else {
             print("Producer mode selected");
+            csvPath = "messages/"
 
-            val kafkaProducer: KafkaProducerRunner = KafkaProducerRunner(
-                properties.getProperty("KafkaBroker"),
-                properties.getProperty("KafkaInTopic"),
-                clientId.toString()
+            val kafkaProducer: KafkaDelayProducerRunner = KafkaDelayProducerRunner(
+                broker = properties.getProperty("KafkaBroker"),
+                topic = properties.getProperty("KafkaInTopic"),
+                clientId = clientId.toString(),
+                messagesPerSecond = this.msgsPerSecond,
+                percentLate = this.percentLate,
+                latenessInSecond = this.latenessInSecond,
+                queue
             );
 
             workerPool.execute(kafkaProducer);
-            workerPool.execute(kafkaProducer);
-            workerPool.execute(kafkaProducer);
+            // workerPool.execute(kafkaProducer);
+            // workerPool.execute(kafkaProducer);
         }
 
-        Thread.sleep(10000)
+        // Setup to csv writer
+        val csvWriter: CsvRunner = CsvRunner(
+            csvPath,
+            queue,
+            clientId.toString()
+        );
+
+        workerPool.execute(csvWriter);
+
+        Thread.sleep(20000)
         workerPool.shutdown()
 
     }
@@ -99,7 +116,8 @@ class App {
         val prop = Properties()
         FileInputStream(file).use { prop.load(it) }
 
-        // Print all properties
+        // Print found properties
+        println("Found following settings:")
         prop.stringPropertyNames()
             .associateWith {prop.getProperty(it)}
             .forEach { println(it) }

@@ -1,10 +1,3 @@
-// Configure the Google Cloud provider
-provider "google" {
-  credentials = file("/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-71816b8a0e21.json")
-  project     = "csb-benchmark-apachef"
-  region      = var.instance_region
-}
-
 # Virtual Private Network
 resource "google_compute_network" "vpc_network" {
   name = "benchmark-network"
@@ -40,7 +33,7 @@ resource "google_compute_firewall" "basic" {
 
 resource "google_container_cluster" "kafka_cluster" {
   name     = "benchmark-cluster"
-  location = var.instance_region
+  location = var.instance_region # "europe-west3"
   network = google_compute_network.vpc_network.name
   subnetwork = google_compute_subnetwork.benchmark_subnet.name
 
@@ -55,11 +48,16 @@ resource "google_container_node_pool" "kafka_node_pool" {
   name       = "kafka-node-pool"
   location   = var.instance_region
   cluster    = google_container_cluster.kafka_cluster.name
-  node_count = 1
+  node_count = 3
+
+  # autoscaling {
+  #   max_node_count = 6
+  #   min_node_count = 2
+  # }
 
   node_config {
-    preemptible  = true
-    machine_type = var.gke_machine_type
+    # preemptible  = true
+    machine_type = "e2-medium" #var.gke_machine_type
 
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
     # service_account = google_service_account.default.email
@@ -69,7 +67,63 @@ resource "google_container_node_pool" "kafka_node_pool" {
   }
 }
 
-// A single Compute Engine instance
+############### KAFKA SETUP ################
+
+resource "kubernetes_namespace" "kafka" {
+  metadata {
+    name = "kafka-cluster"
+  }
+}
+
+data "kubectl_path_documents" "kafka" {
+  pattern = "../infrastructure/kafka/*.yaml"
+}
+
+resource "kubectl_manifest" "kafka_deplyoment" {
+  for_each  = toset(data.kubectl_path_documents.kafka.documents)
+  yaml_body = each.value
+  wait_for_rollout = true
+  override_namespace = kubernetes_namespace.kafka.metadata[0].name
+
+  depends_on = [
+    google_container_cluster.kafka_cluster,
+    kubernetes_namespace.kafka,
+    google_container_node_pool.kafka_node_pool
+  ]
+}
+
+############### Apache Flink SETUP ################
+# This Approach was not working, because of yaml formatting issues with kubectl_manifest
+# and the |+ literal scalar format. For now I only use this this to create the namespace
+# and the rest is done using kubectl directly.
+
+resource "kubernetes_namespace" "flink" {
+  metadata {
+    name = "flink-namespace"
+  }
+}
+
+# data "kubectl_path_documents" "flink" {
+#   pattern = "../infrastructure/flink/*.yaml"
+# }
+
+# resource "kubectl_manifest" "flink_deplyoment" {
+#   for_each  = toset(data.kubectl_path_documents.flink.documents)
+#   yaml_body = each.value
+#   wait_for_rollout = true
+#   override_namespace = kubernetes_namespace.flink.metadata[0].name
+
+#   depends_on = [
+#     google_container_cluster.kafka_cluster,
+#     kubernetes_namespace.flink,
+#     google_container_node_pool.kafka_node_pool
+#   ]
+# }
+
+
+############### BENCHMARK CLIENT SETUP ################
+
+# A single Compute Engine instance
 resource "google_compute_instance" "clients" {
   name                      = "benchmark-client-vm-${count.index}"
   machine_type              = var.instance_type
@@ -85,7 +139,7 @@ resource "google_compute_instance" "clients" {
     }
   }
 
-  // Add startup script to instance with variables.
+  # Add startup script to instance with variables.
   metadata_startup_script = templatefile("${path.module}/startup.tpl", { 
     endpoint = "",
     ip_addrs = ["10.0.0.1", "10.0.0.2"] 
@@ -96,7 +150,7 @@ resource "google_compute_instance" "clients" {
     serial-port-enable = true
   }
 
-  // Copy benchmark client application to instance
+  # Copy benchmark client application to instance
   provisioner "file" {
     source      = "../benchmark-client/app/build/distributions/app.zip"
     destination = "app.zip"
@@ -111,7 +165,7 @@ resource "google_compute_instance" "clients" {
     }
   }
 
-  // Copy config file for application (could also be generated in main dir)
+  # Copy config file for application (could also be generated in main dir)
   provisioner "file" {
     source      = "../benchmark-client/app/config.properties"
     destination = "config.properties"
@@ -131,13 +185,13 @@ resource "google_compute_instance" "clients" {
     subnetwork = google_compute_subnetwork.benchmark_subnet.name
 
     access_config {
-      // Gives the VM an external IP
+      # Gives the VM an external IP
     }
   }
 
-  # depends_on = [ 
-  #   google_compute_network.vpc_network,
-  #   google_compute_subnetwork.benchmark_subnet,
-  #   google_compute_firewall.basic,
-  # ]
+  depends_on = [ 
+    google_compute_network.vpc_network,
+    google_compute_subnetwork.benchmark_subnet,
+    google_compute_firewall.basic,
+  ]
 }

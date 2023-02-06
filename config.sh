@@ -17,3 +17,7 @@ dataset="custom" # custom / user-activity / ...
 
 ###### Job deployment #######
 java_11_home="/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home"
+
+###### Experiment Setup #######
+number_producers=1
+number_consumers=1

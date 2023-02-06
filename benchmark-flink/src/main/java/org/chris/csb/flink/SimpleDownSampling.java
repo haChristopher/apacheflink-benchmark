@@ -6,10 +6,14 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.util.Collector;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -33,15 +37,23 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.Obje
 public class SimpleDownSampling {
 
 	public static void main(String[] args) throws Exception {
+
+		// Load properties from config file
+		Properties prop = new Properties();
+		try (InputStream input = new FileInputStream("resources/config.properties")) {
+            prop.load(input);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 		
 		String jobName= "FlinkWindowSample";
-		String inputTopic = "flink-input";
-		String outputTopic = "flink-output";
-		String consumerGroup = "benchmark";
-		String broker = "host.docker.internal:9092";
-		int allowedLatenessInSeconds = 50;
-		int consideredLateAfterSeconds = 0;
-		int windowSizeInSeconds = 5;
+		String inputTopic = prop.getProperty("InputTopic", "flink-input");
+		String outputTopic =  prop.getProperty("OutputTopic", "flink-output");
+		String consumerGroup = prop.getProperty("ConsumerGroup", "benchmark");
+		String broker = prop.getProperty("KafkaBroker", "host.docker.internal:9092");
+		int allowedLatenessInSeconds = Integer.parseInt(prop.getProperty("AllowedLatenessInSeconds", "50"));
+		int consideredLateAfterSeconds = Integer.parseInt(prop.getProperty("ConsiderLaterAfterSeconds", "0"));
+		int windowSizeInSeconds = Integer.parseInt(prop.getProperty("WindowSizeInSeconds", "5"));
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 

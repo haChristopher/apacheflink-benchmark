@@ -1,0 +1,70 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: zookeeper-deployment-1
+  namespace: kafka-cluster
+spec:
+  serviceName: zookeeper
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper-1
+  template:
+    metadata:
+      labels:
+        app: zookeeper-1
+    spec:
+      containers:
+      - name: zoo1
+        image: digitalwonderland/zookeeper
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 2181
+        - containerPort: 2888
+        - containerPort: 3888
+        # env:
+        # - name: ZOOKEEPER_ID
+        #   value: "1"
+        # - name: ZOOKEEPER_SERVER_1
+        #   value: zoo1
+        # - name: ZOOKEEPER_SERVER_2
+        #   value: zoo2
+        # - name: ZOOKEEPER_SERVER_3
+        #   value: zoo3
+        volumeMounts:
+          - name: efs-volume
+            mountPath: "/var/lib/zookeeper"
+      volumes:
+      - name: efs-volume
+        volumeClaimTemplates:
+          - metadata:
+              name: efs-volume
+            spec:
+              accessModes: [ "ReadWriteOnce" ]
+              storageClassName: "standard"
+              resources:
+                requests:
+                  storage: 1Gi # 248Mi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: kafka-cluster
+  labels:
+    app: zookeeper-1
+spec:
+  ports:
+  - name: client
+    port: 2181
+    protocol: TCP
+  - name: follower
+    port: 2888
+    protocol: TCP
+  - name: leader
+    port: 3888
+    protocol: TCP
+  selector:
+    app: zookeeper-1

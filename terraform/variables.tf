@@ -1,3 +1,9 @@
+variable "project_id" {
+  type        = string
+  description = "Id of google cloud project"
+  default     = "csb-benchmark-apachef"
+}
+
 variable "instance_count" {
   type        = number
   description = "Number of benchmarking client instances"

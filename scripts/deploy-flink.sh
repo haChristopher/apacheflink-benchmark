@@ -2,6 +2,10 @@
 
 cd infrastructure/flink
 
+## Create namespace and service
+kubectl create -f flink-namespace.yaml
+sleep 5
+
 # switch kubectl namespace
 kubectl config set-context --current --namespace=flink-namespace
 

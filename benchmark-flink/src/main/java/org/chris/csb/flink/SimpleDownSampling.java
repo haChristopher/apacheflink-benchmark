@@ -40,7 +40,7 @@ public class SimpleDownSampling {
 
 		// Load properties from config file
 		Properties prop = new Properties();
-		try (InputStream input = new FileInputStream("resources/config.properties")) {
+		try (InputStream input = SimpleDownSampling.class.getClassLoader().getResourceAsStream("config.properties");) {
             prop.load(input);
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -53,7 +53,7 @@ public class SimpleDownSampling {
 		String broker = prop.getProperty("KafkaBroker", "host.docker.internal:9092");
 		int allowedLatenessInSeconds = Integer.parseInt(prop.getProperty("AllowedLatenessInSeconds", "50"));
 		int consideredLateAfterSeconds = Integer.parseInt(prop.getProperty("ConsiderLaterAfterSeconds", "0"));
-		int windowSizeInSeconds = Integer.parseInt(prop.getProperty("WindowSizeInSeconds", "5"));
+		int windowSizeInSeconds = Integer.parseInt(prop.getProperty("AllowedLatenessInSeconds", "5"));
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 

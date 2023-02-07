@@ -65,7 +65,7 @@ class CsvRunner: Runnable {
                     Thread.currentThread().interrupt();
                 }
 
-                if (!headerWritten) {
+                if (!headerWritten && list.size > 0) {
                     currentFile.writeText(list.get(0).toPropertyCSVString())
                     currentFile.appendText("\n")
                     headerWritten = true

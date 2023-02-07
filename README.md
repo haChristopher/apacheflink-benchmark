@@ -112,6 +112,12 @@ Creating topics
 ```
 bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092
 bin/kafka-topics.sh --create --topic flink-output --bootstrap-server localhost:9092
+
+bin/kafka-topics.sh --bootstrap-server 172.16.0.33:19092 --topic flink-input --create --partitions 10 --replication-factor 1
+bin/kafka-topics.sh --bootstrap-server 172.16.0.33:19092 --topic flink-output --create --partitions 10 --replication-factor 1
+
+bin/kafka-topics.sh --bootstrap-server 172.16.0.52:19092 --list 
+
 ```
 
 Delete topics
@@ -145,3 +151,14 @@ Run the analysis:
 ```
 python analyse.py myResults.csv
 ```
+
+# Experiments
+Following Experiences have been conducted
+
+Variables:
+percentage late = [25, 50, 75]
+allowed lateness = [0s, 30s, 60s]
+window size = [0s, 30s, 60s]
+
+
+pipeline type = [tumbling_small, tumbling_big, sliding]

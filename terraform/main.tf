@@ -37,6 +37,9 @@ resource "google_container_cluster" "kafka_cluster" {
   network = google_compute_network.vpc_network.name
   subnetwork = google_compute_subnetwork.benchmark_subnet.name
 
+  # Needed for making services available to vms in the same vpc network
+  enable_l4_ilb_subsetting = true
+
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
   # node pool and immediately delete it.
@@ -69,28 +72,28 @@ resource "google_container_node_pool" "kafka_node_pool" {
 
 ############### KAFKA SETUP ################
 
-resource "kubernetes_namespace" "kafka" {
-  metadata {
-    name = "kafka-cluster"
-  }
-}
+# resource "kubernetes_namespace" "kafka" {
+#   metadata {
+#     name = "kafka-cluster"
+#   }
+# }
 
-data "kubectl_path_documents" "kafka" {
-  pattern = "../infrastructure/kafka/*.yaml"
-}
+# data "kubectl_path_documents" "kafka" {
+#   pattern = "../infrastructure/kafka/*.yaml"
+# }
 
-resource "kubectl_manifest" "kafka_deplyoment" {
-  for_each  = toset(data.kubectl_path_documents.kafka.documents)
-  yaml_body = each.value
-  wait_for_rollout = true
-  override_namespace = kubernetes_namespace.kafka.metadata[0].name
+# resource "kubectl_manifest" "kafka_deplyoment" {
+#   for_each  = toset(data.kubectl_path_documents.kafka.documents)
+#   yaml_body = each.value
+#   wait_for_rollout = true
+#   override_namespace = kubernetes_namespace.kafka.metadata[0].name
 
-  depends_on = [
-    google_container_cluster.kafka_cluster,
-    kubernetes_namespace.kafka,
-    google_container_node_pool.kafka_node_pool
-  ]
-}
+#   depends_on = [
+#     google_container_cluster.kafka_cluster,
+#     kubernetes_namespace.kafka,
+#     google_container_node_pool.kafka_node_pool
+#   ]
+# }
 
 ############### Apache Flink SETUP ################
 # This Approach was not working, because of yaml formatting issues with kubectl_manifest
@@ -124,11 +127,11 @@ resource "kubernetes_namespace" "flink" {
 ############### BENCHMARK CLIENT SETUP ################
 
 # A single Compute Engine instance
-resource "google_compute_instance" "clients" {
-  name                      = "benchmark-client-vm-${count.index}"
+resource "google_compute_instance" "client_producer" {
+  name                      = "benchmark-client-produce-vm-${count.index}"
   machine_type              = var.instance_type
   zone                      = var.instance_region
-  count                     = var.instance_count
+  count                     = var.producer_count
   allow_stopping_for_update = "false"
   tags         = ["benchmark-vm-instance"]
 
@@ -140,8 +143,82 @@ resource "google_compute_instance" "clients" {
   }
 
   # Add startup script to instance with variables.
-  metadata_startup_script = templatefile("${path.module}/startup.tpl", { 
-    endpoint = "",
+  metadata_startup_script = templatefile("${path.module}/startup.sh", { 
+    type = "produce",
+    ip_addrs = ["10.0.0.1", "10.0.0.2"] 
+  })
+
+  metadata = {
+    ssh-keys = "${var.ssh_user}:${file(var.ssh_key_path_public)}"
+    serial-port-enable = true
+  }
+
+  # Copy benchmark client application to instance
+  provisioner "file" {
+    source      = "../benchmark-client/app/build/distributions/app.zip"
+    destination = "app.zip"
+
+    connection {
+      type        = "ssh"
+      host        = self.network_interface.0.access_config.0.nat_ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_key_path_private)
+      agent       = "false"
+      timeout     = "60s"
+    }
+  }
+
+  # Copy config file for application (could also be generated in main dir)
+  provisioner "file" {
+    source      = "../benchmark-client/app/config.properties"
+    destination = "config.properties"
+
+    connection {
+      type        = "ssh"
+      host        = self.network_interface.0.access_config.0.nat_ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_key_path_private)
+      agent       = "false"
+      timeout     = "60s"
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.vpc_network.name
+    subnetwork = google_compute_subnetwork.benchmark_subnet.name
+
+    access_config {
+      # Gives the VM an external IP
+    }
+  }
+
+  depends_on = [ 
+    google_compute_network.vpc_network,
+    google_compute_subnetwork.benchmark_subnet,
+    google_compute_firewall.basic,
+  ]
+}
+
+
+
+resource "google_compute_instance" "client_consumer" {
+  name                      = "benchmark-client-consume-vm-${count.index}"
+  machine_type              = var.instance_type
+  zone                      = var.instance_region
+  count                     = var.consumer_count
+  allow_stopping_for_update = "false"
+  tags         = ["benchmark-vm-instance"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-2204-jammy-v20221101a"
+	    size = var.instance_disk_size
+    }
+  }
+
+  # Add startup script to instance with variables.
+  metadata_startup_script = templatefile("${path.module}/startup.sh", { 
+    type = "consume",
     ip_addrs = ["10.0.0.1", "10.0.0.2"] 
   })
 

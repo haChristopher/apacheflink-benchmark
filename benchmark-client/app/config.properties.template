@@ -1,0 +1,12 @@
+CSVPath = ./requestLogs.csv
+RequestTimeoutInMs = 5000
+MaxThreadPoolSize = 5
+KafkaInTopic=flink-input
+KafkaOutTopic=flink-output
+KafkaBroker={{KAFKA_IP_PLACE}}:19092
+ConsumerGroup=result-consumer
+Mode=consume
+MessagesPerSecond={{MSP_PER_SEC_PLACE}}
+PercentageOfLateMsgs={{PERCENTAGE_LATE_PLACE}}
+LatenessInSecond={{TIME_LATE_PLACE}}
+NumberOfThreads={{NUM_THREADS_PLACE}}

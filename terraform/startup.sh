@@ -1,11 +1,13 @@
 #!/bin/bash
-export DEBIAN_FRONTEND=noninteractive
+# export DEBIAN_FRONTEND=noninteractive
+
+touch start.txt
+
+cd home/provisioner/
 
 adduser benchmark
 echo 'benchmark:client' | chpasswd
 usermod -aG google-sudoers benchmark
-
-echo "TARGET_ENDPOINT = ${endpoint}" > /tmp/iplist
 
 sudo apt update
 sudo apt upgrade -y
@@ -18,4 +20,4 @@ unzip app.zip
 touch startupFinished.txt
 
 # Execute Kotlin App
-./app/bin/app
+./app/bin/app --args="${type}"

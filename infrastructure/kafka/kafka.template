@@ -7,44 +7,36 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka-broker-1
-  serviceName: kafka1
+      app: kafka-broker-{{ID_PLACE}}
+  serviceName: kafka{{ID_PLACE}}
   template:
     metadata:
       labels:
-        app: kafka-broker-1
+        app: kafka-broker-{{ID_PLACE}}
     spec:
       containers:
       - env:
         - name: KAFKA_LISTENERS
           value: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: INTERNAL://kafka1:9092,EXTERNAL://172.16.0.33:19092
+          value: INTERNAL://kafka{{ID_PLACE}}:9092,EXTERNAL://{{INTERNALIP_PLACE}}:19092
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: INTERNAL
-        # - name: KAFKA_ADVERTISED_PORT
-        #   value: "9092"
-        # - name: KAFKA_ADVERTISED_HOST_NAME
-        #   value: kafka1
-        # - name: KAFKA_ADVERTISED_LISTENERS
-        #   value: PLAINTEXT://kafka1:9092
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: zookeeper:2181 # ,zoo2:2181,zoo3:2181
         - name: KAFKA_LOG_DIRS
           value: /kafka/kafka-logs
-        # - name: KAFKA_BROKER_ID
-        #   value: "1"
         - name: KAFKA_JMX_PORT
           value: "5555"
-        # - name: KAFKA_CLEANUP_POLICY
-        #   value: compact
         - name: TOPIC_TIMESTAMP_TYPE
           value: LogAppendTime
+        - name: KAFKA_CREATE_TOPICS
+          value: flink-input:10:1,flink-output:10:1:compact
         image: wurstmeister/kafka:2.11-2.0.1
         imagePullPolicy: IfNotPresent
-        name: kafka-broker1
+        name: kafka-broker{{ID_PLACE}}
         ports:
         - containerPort: 9092
         - containerPort: 19092

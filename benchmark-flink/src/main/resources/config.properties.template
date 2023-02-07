@@ -1,0 +1,7 @@
+ConsumerGroup = result-consumer
+KafkaBroker = {{KAFKA_IP_PLACE}}:19092
+InputTopic = flink-input
+OutputTopic = flink-output
+AllowedLatenessInSeconds = {{ALLOWEDLATE_PLACE}}
+ConsiderLaterAfterSeconds = {{LATEAFTER_PLACE}}
+WindowSizeInSeconds = {{WINDOWSIZE_PLACE}}

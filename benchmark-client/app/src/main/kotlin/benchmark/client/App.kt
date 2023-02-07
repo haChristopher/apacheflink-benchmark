@@ -16,11 +16,11 @@ import benchmark.client.KafkaDelayProducerRunner
 import benchmark.client.KafkaConsumerRunner
 
 class App {
-    var corePoolSize: Int = 2
-    var maximumPoolSize: Int = 3
+    var corePoolSize: Int = 5
+    var maximumPoolSize: Int = 5
     var keepAliveTime = 100L
     var workQueue = SynchronousQueue<Runnable>()
-    var csvPath = "/"
+    var csvPath = ""
     lateinit var workerPool: ExecutorService
     lateinit var properties: Properties
     lateinit var queue: BlockingQueue<CSVWriteable>
@@ -28,6 +28,7 @@ class App {
     var msgsPerSecond: Int = 0
     var percentLate: Int = 0
     var latenessInSecond: Int = 0
+    var numberOfThreads: Int = 0
 
     fun run(mode: String ){
         this.mode = mode
@@ -42,6 +43,7 @@ class App {
         this.msgsPerSecond = Integer.parseInt(properties.getProperty("MessagesPerSecond"), 10);
         this.percentLate = Integer.parseInt(properties.getProperty("PercentageOfLateMsgs"), 10);
         this.latenessInSecond = Integer.parseInt(properties.getProperty("LatenessInSecond"), 10);
+        this.numberOfThreads = Integer.parseInt(properties.getProperty("NumberOfThreads"), 10);
 
         if (this.mode == "") {
             this.mode = properties.getProperty("Mode")
@@ -50,6 +52,13 @@ class App {
         if ( clientId == null) {
             clientId = UUID.randomUUID().toString()
         }
+
+        Wait for starting signal
+        while (!File("start.txt").exists()) {
+            println("Waiting for starting signal ...");
+            Thread.sleep(1000)
+        }
+        println("Starting signal received...");
 
         val workerPool: ExecutorService = ThreadPoolExecutor(
             corePoolSize,
@@ -89,9 +98,9 @@ class App {
                 queue
             );
 
-            workerPool.execute(kafkaProducer);
-            // workerPool.execute(kafkaProducer);
-            // workerPool.execute(kafkaProducer);
+            for (i in 1..numberOfThreads) {
+                workerPool.execute(kafkaProducer);
+            }
         }
 
         // Setup to csv writer
@@ -103,9 +112,9 @@ class App {
 
         workerPool.execute(csvWriter);
 
-        Thread.sleep(20000)
+        // Terminate worker pool after 30 minutes
+        Thread.sleep(60 * 30 * 1000L);
         workerPool.shutdown()
-
     }
 
     fun loadProperties(): Properties {

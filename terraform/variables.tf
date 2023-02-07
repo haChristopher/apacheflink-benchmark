@@ -4,9 +4,15 @@ variable "project_id" {
   default     = "csb-benchmark-apachef"
 }
 
-variable "instance_count" {
+variable "producer_count" {
   type        = number
-  description = "Number of benchmarking client instances"
+  description = "Number of benchmarking client producer instances"
+  default     = 3
+}
+
+variable "consumer_count" {
+  type        = number
+  description = "Number of benchmarking client consumer instances"
   default     = 1
 }
 

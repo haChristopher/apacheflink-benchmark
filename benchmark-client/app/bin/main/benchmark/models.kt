@@ -45,6 +45,7 @@ class ResultMessage(
     @JsonProperty("id") val id: Int?,
     @JsonProperty("timestamp") val timestamp: Long?,
     @JsonProperty("sendTimestamp") val sendTimestamp: Long?,
+    @JsonProperty("latestTimestamp") val latestTimestamp: Long?,
     @JsonProperty("value") var value: Int?,
     @JsonProperty("windowEnd") var windowEnd: Long?,
     @JsonProperty("windowStart") var windowStart: Long?,
@@ -61,18 +62,18 @@ class ResultMessage(
 ): CSVWriteable {
 
     override fun toCSVString(): String {
-            var result = listOf(id, sendTimestamp, value, windowEnd, windowStart, numRecords, writeInTimestamp, writeOutTimestamp, writeOutType).joinToString(separator=";")
+            var result = listOf(id, sendTimestamp, latestTimestamp, value, windowEnd, windowStart, numRecords, writeInTimestamp, writeOutTimestamp, writeOutType).joinToString(separator=";")
             result += ";" + composed.joinToString(prefix = "[", postfix = "]", separator = ",")
             return result
     }
 
     override fun toPropertyCSVString(): String {
-        return "id;sendTimestamp;value;windowEnd;windowStart;numRecords;writeInTimestamp;writeOutTimestamp;writeOutType;composed"
+        return "id;sendTimestamp;latestTimestamp;value;windowEnd;windowStart;numRecords;writeInTimestamp;writeOutTimestamp;writeOutType;composed"
     }
 
     companion object Helper {
         fun toPropertyCSVString(): String {
-                return "id;sendTimestamp;value;windowEnd;windowStart;numRecords;writeInTimestamp;writeOutTimestamp;writeOutType;composed"
+                return "id;sendTimestamp;latestTimestamp;value;windowEnd;windowStart;numRecords;writeInTimestamp;writeOutTimestamp;writeOutType;composed"
         }
     }
 

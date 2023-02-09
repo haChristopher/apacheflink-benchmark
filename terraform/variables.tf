@@ -19,13 +19,13 @@ variable "consumer_count" {
 variable "instance_type" {
   type        = string
   description = "Type of benchmarking client instances"
-  default     = "e2-micro"
+  default     = "e2-medium"
 }
 
 variable "gke_machine_type" {
   type        = string
   description = "Type of machine for GKE Cluster nodes"
-  default     = "e2-micro"
+  default     = "e2-medium"
 }
 
 variable "subnet_name" {

@@ -32,7 +32,7 @@ resource "google_compute_firewall" "basic" {
 }
 
 resource "google_container_cluster" "kafka_cluster" {
-  name     = "benchmark-cluster"
+  name     = "kafka-cluster"
   location = var.instance_region # "europe-west3"
   network = google_compute_network.vpc_network.name
   subnetwork = google_compute_subnetwork.benchmark_subnet.name
@@ -51,7 +51,7 @@ resource "google_container_node_pool" "kafka_node_pool" {
   name       = "kafka-node-pool"
   location   = var.instance_region
   cluster    = google_container_cluster.kafka_cluster.name
-  node_count = 3
+  node_count = 2
 
   # autoscaling {
   #   max_node_count = 6
@@ -60,7 +60,46 @@ resource "google_container_node_pool" "kafka_node_pool" {
 
   node_config {
     # preemptible  = true
-    machine_type = "e2-medium" #var.gke_machine_type
+    machine_type = var.gke_machine_type
+
+    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+    # service_account = google_service_account.default.email
+    oauth_scopes    = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+}
+
+resource "google_container_cluster" "flink_cluster" {
+  name     = "flink-cluster"
+  location = var.instance_region # "europe-west3"
+  network = google_compute_network.vpc_network.name
+  subnetwork = google_compute_subnetwork.benchmark_subnet.name
+
+  # Needed for making services available to vms in the same vpc network
+  enable_l4_ilb_subsetting = true
+
+  # We can't create a cluster with no node pool defined, but we want to only use
+  # separately managed node pools. So we create the smallest possible default
+  # node pool and immediately delete it.
+  remove_default_node_pool = true
+  initial_node_count       = 1
+}
+
+resource "google_container_node_pool" "flink_node_pool" {
+  name       = "flink-node-pool"
+  location   = var.instance_region
+  cluster    = google_container_cluster.flink_cluster.name
+  node_count = 2
+
+  # autoscaling {
+  #   max_node_count = 6
+  #   min_node_count = 2
+  # }
+
+  node_config {
+    # preemptible  = true
+    machine_type = var.gke_machine_type
 
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
     # service_account = google_service_account.default.email
@@ -143,7 +182,7 @@ resource "google_compute_instance" "client_producer" {
   }
 
   # Add startup script to instance with variables.
-  metadata_startup_script = templatefile("${path.module}/startup.sh", { 
+  metadata_startup_script = templatefile("${path.module}/startup_producer.tpl", { 
     type = "produce",
     ip_addrs = ["10.0.0.1", "10.0.0.2"] 
   })
@@ -217,7 +256,7 @@ resource "google_compute_instance" "client_consumer" {
   }
 
   # Add startup script to instance with variables.
-  metadata_startup_script = templatefile("${path.module}/startup.sh", { 
+  metadata_startup_script = templatefile("${path.module}/startup_consumer.tpl", { 
     type = "consume",
     ip_addrs = ["10.0.0.1", "10.0.0.2"] 
   })

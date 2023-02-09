@@ -49,4 +49,3 @@ echo 'Kafka is available'
 # Switch back to default namespace
 kubectl config set-context --current --namespace=default
 
-cd ...

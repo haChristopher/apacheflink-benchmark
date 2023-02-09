@@ -28,8 +28,8 @@ class CsvRunner: Runnable {
         basePath: String,
         queue: BlockingQueue<CSVWriteable>,
         clientId: String,
-        batchSize: Int = 50,
-        batchTimeOut: Long = 10000,
+        batchSize: Int = 5,
+        batchTimeOut: Long = 100000,
         recordsPerFile: Int = 10000
     ) {
         this.basePath = basePath
@@ -43,25 +43,32 @@ class CsvRunner: Runnable {
 
     public override fun run() {
 
-        while (!Thread.currentThread().isInterrupted()) {
+        // !Thread.currentThread().isInterrupted()
+        while (true) {
             val time = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
             currentFileName = time.toString() + "-" + currentThreadId + "-" + currentFileIndex + ".csv"
-            var list: MutableList<CSVWriteable> = mutableListOf()
+            println("Writing to file: " + currentFileName)
 
+            var list: MutableList<CSVWriteable> = mutableListOf()
             var currentFile = File(basePath + currentFileName)
             currentFile.getParentFile().mkdirs();
             currentFile.createNewFile();
 
+            currentNumRecords = 0
             var headerWritten = false
 
             while (currentNumRecords < this.recordsPerFile) {
 
                 try {
                     val timeoutAt: Long = System.currentTimeMillis() + batchTimeOut;
-                    while(list.size < this.batchSize || timeoutAt > System.currentTimeMillis()) {
-                        list.add(queue.poll(3, TimeUnit.SECONDS));
+                    println("message")
+                    while(list.size < this.batchSize && timeoutAt > System.currentTimeMillis()) {
+                        list.add(queue.poll(10, TimeUnit.SECONDS));
+                        println("Polling")
+                        println(list.size)
                     }
                 } catch (e: Exception) {
+                    println("Error while polling" + e.stackTraceToString())
                     Thread.currentThread().interrupt();
                 }
 
@@ -76,6 +83,7 @@ class CsvRunner: Runnable {
                     currentFile.appendText("\n")
                 }
 
+                currentNumRecords += list.size
                 list.clear()
             }
         }

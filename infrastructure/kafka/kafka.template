@@ -32,8 +32,12 @@ spec:
           value: "5555"
         - name: TOPIC_TIMESTAMP_TYPE
           value: LogAppendTime
+        - name: KAFKA_MESSAGE_TIMESTAMP_TYPE
+          value: LogAppendTime
+        - name: KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE
+          value: LogAppendTime
         - name: KAFKA_CREATE_TOPICS
-          value: flink-input:10:1,flink-output:10:1:compact
+          value: flink-input:1:1,flink-output:1:1
         image: wurstmeister/kafka:2.11-2.0.1
         imagePullPolicy: IfNotPresent
         name: kafka-broker{{ID_PLACE}}

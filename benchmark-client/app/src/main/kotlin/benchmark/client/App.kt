@@ -16,8 +16,8 @@ import benchmark.client.KafkaDelayProducerRunner
 import benchmark.client.KafkaConsumerRunner
 
 class App {
-    var corePoolSize: Int = 5
-    var maximumPoolSize: Int = 5
+    var corePoolSize: Int = 7
+    var maximumPoolSize: Int = 10
     var keepAliveTime = 100L
     var workQueue = SynchronousQueue<Runnable>()
     var csvPath = ""
@@ -49,11 +49,13 @@ class App {
             this.mode = properties.getProperty("Mode")
         }
 
+        this.mode = "produce"
+
         if ( clientId == null) {
             clientId = UUID.randomUUID().toString()
         }
 
-        Wait for starting signal
+        // Wait for starting signal
         while (!File("start.txt").exists()) {
             println("Waiting for starting signal ...");
             Thread.sleep(1000)
@@ -64,7 +66,7 @@ class App {
             corePoolSize,
             maximumPoolSize,
             keepAliveTime,
-            TimeUnit.SECONDS,
+            TimeUnit.MINUTES,
             workQueue,
         )
 
@@ -113,8 +115,8 @@ class App {
         workerPool.execute(csvWriter);
 
         // Terminate worker pool after 30 minutes
-        Thread.sleep(60 * 30 * 1000L);
-        workerPool.shutdown()
+        // Thread.sleep(60 * 30 * 1000L);
+        // workerPool.shutdown()
     }
 
     fun loadProperties(): Properties {

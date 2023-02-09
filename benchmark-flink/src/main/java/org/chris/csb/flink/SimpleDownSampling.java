@@ -6,7 +6,6 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.util.Collector;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
@@ -53,7 +52,7 @@ public class SimpleDownSampling {
 		String broker = prop.getProperty("KafkaBroker", "host.docker.internal:9092");
 		int allowedLatenessInSeconds = Integer.parseInt(prop.getProperty("AllowedLatenessInSeconds", "50"));
 		int consideredLateAfterSeconds = Integer.parseInt(prop.getProperty("ConsiderLaterAfterSeconds", "0"));
-		int windowSizeInSeconds = Integer.parseInt(prop.getProperty("AllowedLatenessInSeconds", "5"));
+		int windowSizeInSeconds = Integer.parseInt(prop.getProperty("WindowSizeInSeconds", "10"));
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
@@ -125,11 +124,13 @@ public class SimpleDownSampling {
 					Integer sum = 0;
 					Long earliestTimestamp = Long.MAX_VALUE;
 					Long latestTimestamp = Long.MIN_VALUE;
+					String latestId = "";
 					String debug = "";
 
 					try {
 						for (ObjectNode element : input) {
-							list.add(element.get("value").get("id").asText());
+							// list.add(element.get("value").get("id").asText());
+							// -> This was causing to large messages on big windows
 							sum += element.get("value").get("value").asInt();
 							long sendTimestamp = element.get("value").get("sendTimestamp").asLong();
 							numRecords ++;
@@ -144,14 +145,18 @@ public class SimpleDownSampling {
 							}
 							if (sendTimestamp > latestTimestamp) {
 								latestTimestamp = sendTimestamp;
+								latestId = element.get("value").get("id").asText();
 							}
 						}
 					} catch (NullPointerException e) {
-						// Do nothing here, fix later
+						// e.printStackTrace();
 					}
+					// Only add newest record.
+					list.add(latestId);
 
 					result.put("debug", debug);
 					result.put("sendTimestamp", earliestTimestamp);
+					result.put("latestTimestamp", latestTimestamp);
 					result.put("value", sum);
 					result.put("numRecords", numRecords);
 					ArrayNode array = mapper.valueToTree(list);

@@ -17,6 +17,10 @@ Install Gradle
 brew install gradle
 ```
 
+Install Kubectl
+https://kubernetes.io/docs/tasks/tools/
+
+
 Install JQuery (not necessary so far)
 ```
 brew install jq
@@ -38,11 +42,37 @@ service_account_key_file="/Users/Christopher/Uni/CSB/keys/csb-benchmark-apachef-
 cluster_name=csb-benchmark-flink-cluster
 ```
 
-## Running the benchmark
+## Installing Java
+
+Apache Flink needs Java 11 or 8 for this benchmark 11 was used. Install Java 11 and set Path to Java home in config.sh
 
 ```
-terraform init
+###### Job deployment #######
+java_11_home="/Library/Java/JavaVirtualMachines/jdk-11.0.16.1.jdk/Contents/Home"
 ```
+
+## Installing Apache Flink
+
+Install Apache Flink Locally: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/try-flink/local_installation/
+
+Set path to flink in config file:
+```
+####### SUT Deployment ######
+pathToFlink="/Users/christopher/Uni/Tools/ApacheFlink/flink-1.16.0/bin/flink"
+```
+
+## Running the benchmark
+
+First define your benchmark configuration in config.sh
+
+Then run the benchmark:
+```
+./start.sh
+```
+
+Currently there is an issue with the mode env setting for the benchmark. Consumer and producer need to be deployed seperated and before the mode needs to be changed manually in App.kt
+
+Results should appear in /results
 
 ## Running the benchmark (locally)
 
@@ -58,7 +88,7 @@ kubectl config get-contexts
 kubectl config use-context docker-desktop
 ```
 
-### Setting up Apache Flink
+### Setting up Apache Flink (Locally)
 
 Install Apache Flink Locally: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/try-flink/local_installation/
 
@@ -158,7 +188,7 @@ Following Experiences have been conducted
 Variables:
 percentage late = [25, 50, 75]
 allowed lateness = [0s, 30s, 60s]
-window size = [0s, 30s, 60s]
+window size = 10s
 
-
-pipeline type = [tumbling_small, tumbling_big, sliding]
+Experiment 1 increase allowedLateness and Lateness
+Experiment 2 increase percentage of late data

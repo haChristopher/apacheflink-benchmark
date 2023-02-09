@@ -19,7 +19,7 @@ spec:
         - name: KAFKA_LISTENERS
           value: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: INTERNAL://kafka1:9092,EXTERNAL://172.16.0.58:19092
+          value: INTERNAL://kafka1:9092,EXTERNAL://172.16.0.21:19092
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
@@ -32,8 +32,12 @@ spec:
           value: "5555"
         - name: TOPIC_TIMESTAMP_TYPE
           value: LogAppendTime
+        - name: KAFKA_MESSAGE_TIMESTAMP_TYPE
+          value: LogAppendTime
+        - name: KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE
+          value: LogAppendTime
         - name: KAFKA_CREATE_TOPICS
-          value: flink-input:10:1,flink-output:10:1:compact
+          value: flink-input:1:1,flink-output:1:1
         image: wurstmeister/kafka:2.11-2.0.1
         imagePullPolicy: IfNotPresent
         name: kafka-broker1

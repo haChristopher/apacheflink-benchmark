@@ -16,6 +16,12 @@ kubectl create -f jobmanager-service.yaml
 kubectl create -f jobmanager-session-deployment-non-ha.yaml
 kubectl create -f taskmanager-session-deployment.yaml
 
+sleep 5
+
+echo 'Waiting for Flink to be available ...'
+while [[ $(kubectl get pods -l app=flink-jobmanager -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
+echo 'Flink is available'
+
 # Port Forwarding in the background
 kubectl port-forward service/flink-jobmanager 8081:8081 &
 

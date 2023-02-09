@@ -24,12 +24,15 @@ number_producers=3
 number_consumers=1
 
 # Pipeline settings
-allowedLateness=0
+allowedLateness=30
 lateAfter=0
-windowsize=60
+windowsize=10
 
 # Client settings
 messagePerSecond=50
-percentageLate=0
-latenessOfMessagesinSeconds=60
+percentageLate=75
+latenessOfMessagesinSeconds=30
 numberOfThreads=5
+
+# BenchmarkRuntime
+runBenchmarkForMinutes=30

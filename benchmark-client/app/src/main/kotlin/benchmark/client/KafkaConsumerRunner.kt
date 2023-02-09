@@ -49,6 +49,7 @@ class KafkaConsumerRunner: Runnable {
 
         while (true) {
             val records = consumer.poll(Duration.ofSeconds(20))
+            println("Got ${records.count()} records")
             records.iterator().forEach {
                 if (it.value() != null) {
                     val messageJson = it.value()
@@ -61,6 +62,7 @@ class KafkaConsumerRunner: Runnable {
                         e.printStackTrace()
                         println("Ignoring incomplete message: {$messageJson}")
                     } catch (e: InvalidFormatException ) {
+                        e.printStackTrace()
                         println("Ignoring invalid message: {$messageJson} has wrong datatype {$e.stackTrace}")
                     }
                 }

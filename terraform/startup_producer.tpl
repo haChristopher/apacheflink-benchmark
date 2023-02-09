@@ -1,7 +1,5 @@
 #!/bin/bash
-# export DEBIAN_FRONTEND=noninteractive
-
-touch start.txt
+export DEBIAN_FRONTEND=noninteractive
 
 cd home/provisioner/
 
@@ -19,5 +17,7 @@ unzip app.zip
 
 touch startupFinished.txt
 
+echo $type > type.txt
+
 # Execute Kotlin App
-./app/bin/app --args="${type}"
+sudo ./app/bin/app --args="produce"

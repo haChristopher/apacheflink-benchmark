@@ -62,7 +62,7 @@ class KafkaDelayProducerRunner: Runnable {
 
         var messageCount = 0;
         
-        while (messageCount < messagesPerSecond * 60) {
+        while (true) {
             Thread.sleep(sleepTimeInMs)
             var timestamp = System.currentTimeMillis();
 
